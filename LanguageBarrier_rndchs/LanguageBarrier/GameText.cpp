@@ -620,6 +620,10 @@ void gameTextInit() {
   if (config["patch"].count("useNewTextSystem") == 1)
     UseNewTextSystem = config["patch"]["useNewTextSystem"].get<bool>();
 
+  SAFE_RUBY_MARKERS = true;
+  if (config["patch"].count("safeRubyMarkers") == 1)
+    SAFE_RUBY_MARKERS = config["patch"]["safeRubyMarkers"].get<bool>();
+
   if (currentGame == RNE || currentGame == RND) {
     fixLeadingZeroes();
 
@@ -1414,7 +1418,8 @@ void semiTokeniseSc3String(char* sc3string, std::list<StringWord_t>& words,
   char c;
   while (sc3string != NULL) {
     c = *sc3string;
-    if ((uint8_t)c == 0x80 && sc3string[1] >= 9 && sc3string[1] <= 11) {
+    if ((uint8_t)c == 0x80 && sc3string[1] >= 9 && sc3string[1] <= 11 &&
+        (!SAFE_RUBY_MARKERS || sc3string[1] == 10 || insideRubyText)) {
       if (sc3string[1] == 10) insideRubyText = true;
       if (sc3string[1] == 11) insideRubyText = false;
       sc3string += 2;
@@ -2585,7 +2590,8 @@ void processSc3TokenList(int xOffset, int yOffset, int lineLength,
                           : it->start;
     while (sc3string <= it->end) {
       c = *sc3string;
-      if ((uint8_t)c == 0x80 && sc3string[1] >= 9 && sc3string[1] <= 11) {
+      if ((uint8_t)c == 0x80 && sc3string[1] >= 9 && sc3string[1] <= 11 &&
+          (!SAFE_RUBY_MARKERS || sc3string[1] == 10 || insideRubyText)) {
         if (sc3string[1] == 10) insideRubyText = true;
         if (sc3string[1] == 11) insideRubyText = false;
         sc3string += 2;
@@ -2763,7 +2769,8 @@ int __cdecl getSc3StringDisplayWidthHook(char* sc3string,
       gameExeSc3Eval(&sc3, &sc3evalResult);
       sc3string = (char*)sc3.pc;
     } else if ((uint8_t)c == 0x80 && sc3string[1] >= 9 &&
-               sc3string[1] <= 11) {
+               sc3string[1] <= 11 &&
+               (!SAFE_RUBY_MARKERS || sc3string[1] == 10 || insideRubyText)) {
       if (sc3string[1] == 10) insideRubyText = true;
       if (sc3string[1] == 11) insideRubyText = false;
       sc3string += 2;

@@ -58,6 +58,15 @@ LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_SPRITE_Y;
 LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_SPRITE_HEIGHT;
 LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_HEIGHT_SHIFT;
 LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_YOFFSET_SHIFT;
+// The SC3 text stream has no escape mechanism, so the byte pair 0x80 0x09 / 0x0A
+// / 0x0B is ambiguous: it is used both for ruby (furigana) begin/end markers and
+// as the glyph id for whatever character sits at charset index 9 / 10 / 11.
+// In the Chinese charset those indices hold '8', '9' and 'A', so treating the
+// pair as an unconditional marker silently eats every 'A' (e.g. "PHASE NAE"
+// renders as "PHSE NE"). When this is true the pair is only honoured as a marker
+// while a ruby run is actually open, so letters render normally and real ruby
+// (which always opens with 0x0A first) still works.
+LB_GLOBAL bool SAFE_RUBY_MARKERS;
 
 GAMETEXT_H_IMPORT int* BacklogLineSave;
 GAMETEXT_H_IMPORT int* BacklogDispLinePos;

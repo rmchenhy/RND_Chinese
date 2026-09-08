@@ -1,0 +1,77 @@
+# Visual Studio / MSBuild 构建中间产物
+# 注意：不要忽略 dinput8-Release/ 整个目录，否则内部 dll 的例外规则不生效
+dinput8-Debug/
+Release/
+Debug/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# 构建产物
+*.obj
+*.tlog
+*.pdb
+*.ilk
+*.idb
+*.exp
+*.lib
+*.exe
+*.lastbuildstate
+*.aps
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userosscache
+*.sdf
+*.opensdf
+*.cachefile
+*.ipch
+
+# DLL：默认全部忽略；发布必需的运行时件用下面的例外保留。
+# 例外必须放在通配规则之后，且不能让父目录被忽略，否则无效。
+*.dll
+!dinput8-Release/dinput8.dll
+!dinput8-Release/VSFilter.dll
+!dinput8-Release/languagebarrier/LICENSE
+!dinput8-Release/languagebarrier/THIRDPARTY.LB.txt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Rust (sc3tools) — 构建中间产物
+# 注意：不能忽略整个 target/，否则 release exe 的例外规则不生效
+sc3tools_rndchs/target/debug/
+sc3tools_rndchs/target/release/build/
+sc3tools_rndchs/target/release/deps/
+sc3tools_rndchs/target/release/examples/
+sc3tools_rndchs/target/release/incremental/
+sc3tools_rndchs/target/release/.fingerprint/
+sc3tools_rndchs/target/release/*.d
+sc3tools_rndchs/target/release/*.rmeta
+sc3tools_rndchs/target/release/*.rlib
+sc3tools_rndchs/target/release/deps/**/*.rlib
+sc3tools_rndchs/target/release/deps/**/*.exe
+*.rmeta
+*.rlib
+
+# 例外：发布必需的提取工具（用户不会自行编译 Rust）
+!sc3tools_rndchs/target/release/sc3tools.exe
+
+# OS / 编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vs/
+.idea/
+*.swp
+*~
+
+# 本地工作文件（不属于补丁）
+临时/
+备份/
+recent*/

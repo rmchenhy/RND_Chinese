@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <codecvt>
+#include <cstdio>
 #include <freetype/ftdriver.h>
 #include <freetype/ftmodapi.h>
 void to_json(nlohmann::json& j, const FontGlyph& p) {
@@ -51,12 +52,24 @@ void TextRendering::enableReplacement() {
 
 TextRendering::TextRendering() {}
 
+uint32_t TextRendering::computeCharsetHash(const std::wstring& charset) {
+  uint32_t hash = 2166136261u;  // FNV-1a 32-bit offset basis
+  for (wchar_t c : charset) {
+    hash ^= (uint32_t)(uint16_t)c;
+    hash *= 16777619u;
+    hash ^= (uint32_t)(uint16_t)(c >> 16);
+    hash *= 16777619u;
+  }
+  return hash;
+}
+
 void TextRendering::Init(void* widthData, void* widthData2,
                          FontDataLanguage language) {
   auto charset = lb::config["patch"]["charset"].get<std::string>();
   this->fontPath = lb::config["patch"]["fontPath"].get<std::string>();
   std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
   fullCharMap = converter.from_bytes(charset.c_str());
+  this->charsetHash = computeCharsetHash(fullCharMap);
 
   currentCharMap = &fullCharMap;
   this->buildFont(32, true);
@@ -114,6 +127,7 @@ void TextRendering::buildFont(int fontSize, bool measure) {
   this->fontData[fontSize] = FontData();
   auto fontData = &this->fontData[fontSize];
   fontData->lang = this->language;
+  fontData->charsetHash = this->charsetHash;
   NUM_GLYPHS = currentCharMap->length();
   if (!measure) {
     fontData->fontTexture.Initialize2D(
@@ -397,6 +411,13 @@ void TextRendering::saveCache() {
 
   for (auto it = this->fontData.begin(); it != this->fontData.end();) {
     if (it->second.fontTexturePtr == nullptr) {
+      // Drop the atlas alongside the index entry, otherwise a later session can
+      // load an index whose font_NN.dds no longer exists and draw nothing.
+      wchar_t atlasName[260];
+      wsprintf(atlasName, L"languagebarrier/fonts/font_%02d.dds", it->first);
+      _wremove(atlasName);
+      wsprintf(atlasName, L"languagebarrier/fonts/outline_%02d.dds", it->first);
+      _wremove(atlasName);
       it = this->fontData.erase(it);
     } else
       ++it;
@@ -413,6 +434,22 @@ void TextRendering::loadCache() {
     cereal::BinaryInputArchive archive(os);
     try {
       archive(this->fontData);
+
+      bool charsetMismatch = false;
+      for (auto it = fontData.begin(); it != fontData.end(); it++) {
+        if (it->second.charsetHash != 0 &&
+            it->second.charsetHash != TextRendering::Get().charsetHash) {
+          charsetMismatch = true;
+          break;
+        }
+      }
+      if (charsetMismatch) {
+        lb::LanguageBarrierLog(
+            "Font cache was baked from a different charset, clearing font cache");
+        fontData.clear();
+        TextRendering::Get().saveCache();
+        return;
+      }
 
       for (auto it = fontData.begin(); it != fontData.end(); it++) {
         if (it->second.lang != TextRendering::Get().language) {
@@ -431,7 +468,10 @@ void TextRendering::loadCache() {
             fileName, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, nullptr,
             this->fontData[size].fontTexture);
         if (g != S_OK) {
+          lb::LanguageBarrierLog(
+              "Font cache is missing its baked atlas, clearing font cache");
           this->fontData.clear();
+          TextRendering::Get().saveCache();
           return;
         }
         wsprintf(fileName, L"languagebarrier/fonts/outline_%02d.dds",
@@ -440,8 +480,10 @@ void TextRendering::loadCache() {
             fileName, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, nullptr,
             this->fontData[size].outlineTexture);
         if (g != S_OK) {
+          lb::LanguageBarrierLog(
+              "Font cache is missing its baked outline atlas, clearing font cache");
           this->fontData.clear();
-
+          TextRendering::Get().saveCache();
           return;
         }
         const auto fontData = &this->fontData[size];

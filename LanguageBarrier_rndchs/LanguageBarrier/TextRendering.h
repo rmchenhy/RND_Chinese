@@ -121,12 +121,16 @@ struct FontData {
   ID3D11Texture2D* outlineTexturePtr;
   ID3D11ShaderResourceView* outlineShaderRscView;
   FontDataLanguage lang = EN;
+  // Fingerprint of the charset this FontData was baked from. A stale cache baked
+  // under a different charset would place glyphs in different cells, so the hash
+  // is checked on load and the cache is discarded on mismatch.
+  uint32_t charsetHash = 0;
 
   FontGlyph* getGlyphInfo(int id, FontType type);
   FontGlyph* getGlyphInfoByChar(wchar_t character, FontType type);
   template <class Archive>
   void serialize(Archive& ar) {
-    ar(lang, glyphData);
+    ar(lang, charsetHash, glyphData);
   }
 };
 
@@ -164,6 +168,10 @@ struct TextRendering {
   std::wstring filteredCharMap;
   std::wstring fullCharMap;
   std::wstring* currentCharMap;
+
+  // FNV-1a over fullCharMap; identifies the charset a font cache was baked from.
+  uint32_t charsetHash = 0;
+  static uint32_t computeCharsetHash(const std::wstring& charset);
 
   inline static TextRendering& Get() {
     static TextRendering instance;
