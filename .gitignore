@@ -43,7 +43,7 @@ __pycache__/
 .venv/
 venv/
 
-# Rust (sc3tools) — 构建中间产物
+# Rust (sc3tools) — 构建中间产物（CN 与 JP 两套工具同样处理）
 # 注意：不能忽略整个 target/，否则 release exe 的例外规则不生效
 sc3tools_rndchs/target/debug/
 sc3tools_rndchs/target/release/build/
@@ -56,11 +56,24 @@ sc3tools_rndchs/target/release/*.rmeta
 sc3tools_rndchs/target/release/*.rlib
 sc3tools_rndchs/target/release/deps/**/*.rlib
 sc3tools_rndchs/target/release/deps/**/*.exe
+
+sc3tools_jp/target/debug/
+sc3tools_jp/target/release/build/
+sc3tools_jp/target/release/deps/
+sc3tools_jp/target/release/examples/
+sc3tools_jp/target/release/incremental/
+sc3tools_jp/target/release/.fingerprint/
+sc3tools_jp/target/release/*.d
+sc3tools_jp/target/release/*.rmeta
+sc3tools_jp/target/release/*.rlib
+sc3tools_jp/target/release/deps/**/*.rlib
+sc3tools_jp/target/release/deps/**/*.exe
 *.rmeta
 *.rlib
 
 # 例外：发布必需的提取工具（用户不会自行编译 Rust）
 !sc3tools_rndchs/target/release/sc3tools.exe
+!sc3tools_jp/target/release/sc3tools.exe
 
 # OS / 编辑器
 .DS_Store
