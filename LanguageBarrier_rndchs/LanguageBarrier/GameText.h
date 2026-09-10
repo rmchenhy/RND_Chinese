@@ -58,15 +58,20 @@ LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_SPRITE_Y;
 LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_SPRITE_HEIGHT;
 LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_HEIGHT_SHIFT;
 LB_GLOBAL float CC_BACKLOG_HIGHLIGHT_YOFFSET_SHIFT;
-// The SC3 text stream has no escape mechanism, so the byte pair 0x80 0x09 / 0x0A
-// / 0x0B is ambiguous: it is used both for ruby (furigana) begin/end markers and
-// as the glyph id for whatever character sits at charset index 9 / 10 / 11.
-// In the Chinese charset those indices hold '8', '9' and 'A', so treating the
-// pair as an unconditional marker silently eats every 'A' (e.g. "PHASE NAE"
-// renders as "PHSE NE"). When this is true the pair is only honoured as a marker
-// while a ruby run is actually open, so letters render normally and real ruby
-// (which always opens with 0x0A first) still works.
-LB_GLOBAL bool SAFE_RUBY_MARKERS;
+// SC3 keeps controls and glyphs apart in the raw stream: a control is a single
+// low byte (<0x80), while a glyph is a two-byte big-endian value whose high
+// byte has 0x80 set. The ruby (furigana) markers are the single-byte controls
+// 0x09/0x0A/0x0B. The glyphs for charset index 9/10/11 -- '8', '9' and 'A' in
+// the Chinese charset -- are the unrelated two-byte pairs
+// 0x80 0x09 / 0x80 0x0A / 0x80 0x0B.
+//
+// The old check tested the *glyph* pairs as if they were ruby markers and so
+// silently ate every literal '8'/'9'/'A' (e.g. "2010/9/11" -> "2010/ /11"); the
+// digit '9' (0x80 0x0A) was hit unconditionally. Real ruby is single-byte and
+// was never matched by that check, so rendering the three pairs as glyphs fixes
+// the digits without touching any genuine ruby. Default OFF; set
+// patch.rubyMarkers=true only if a locale needs the old glyph-as-marker path.
+LB_GLOBAL bool RUBY_MARKERS_ENABLED;
 
 GAMETEXT_H_IMPORT int* BacklogLineSave;
 GAMETEXT_H_IMPORT int* BacklogDispLinePos;
